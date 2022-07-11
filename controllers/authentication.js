@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const bcrypt = require('bcrypt');
+const bodyParser = require('body-parser');
+const jsonParser = bodyParser.json();
 
 let userData = [];
 
@@ -10,11 +12,11 @@ let userData = [];
     userData = JSON.parse(userData);
 })();
 
-router.get('/getData', (req, res, next) => {
+router.get('/getData', (req, res) => {
     res.send(userData);
 })
 
-router.post('/addUser', async (req, res, next) => {
+router.post('/addUser', async (req, res) => {
     try{
         const salt = await bcrypt.genSalt();
         const password = 'password';
@@ -34,6 +36,37 @@ router.post('/addUser', async (req, res, next) => {
         "Content-Type": "text/html",
     });
     res.send('<h2>User created successfully</h2>');
+})
+
+router.post('/login', jsonParser, async (req, res) => {
+
+    
+    const user = userData.find((currUser) => {
+        return currUser.userName === req.body.userName;
+    })
+
+    if(user !== null && user !== undefined){
+        try{
+            const isPasswordCorrect = await bcrypt.compare(req.body.password, user.password);
+            res.set({
+                'Content-Type': 'text/html'
+            })
+            if(isPasswordCorrect){
+                res.send('<h2>Success</h2>');
+                return;
+            }else{
+                res.send('<h2>Failed</h2>');
+                return;
+            }
+        }
+        catch(e){
+            res.send('SOME ERROR!!!');
+            return;
+        }
+    }else{
+        res.send('<h2>User does not exist.</h2>')
+        return;
+    }
 })
 
 module.exports = router;
